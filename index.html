@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ayurveda Essentials Store</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    // Firebase SDK imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgBs3Bx-aCwmuNlRPer6MNxfKo_tn7aLA",
+      authDomain: "besure-sainik-canteen.firebaseapp.com",
+      projectId: "besure-sainik-canteen",
+      storageBucket: "besure-sainik-canteen.appspot.com",
+      messagingSenderId: "762604237425",
+      appId: "1:762604237425:web:acc9dfacbb3b530f0761d0"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const productList = document.getElementById("productList");
+    const cartCount = document.getElementById("cartCount");
+    let products = [];
+
+    async function loadProducts() {
+      const querySnapshot = await getDocs(collection(db, "products"));
+      products = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderProducts(products);
+    }
+
+    async function addToCart(index) {
+      await addDoc(collection(db, "cart"), products[index]);
+    }
+
+    function renderProducts(filtered = products) {
+      productList.innerHTML = "";
+      if (filtered.length === 0) {
+        productList.innerHTML = `<p class="text-center text-gray-600 col-span-full text-xl mt-12">No products found.</p>`;
+        return;
+      }
+      filtered.forEach((product, index) => {
+        const card = document.createElement("div");
+        card.className =
+          "bg-white rounded-xl shadow-md overflow-hidden transition-transform duration-300 card-hover cursor-pointer flex flex-col";
+        card.innerHTML = `
+          <img src="${product.image}" alt="${product.name}" class="h-48 w-full object-cover rounded-t-xl" />
+          <div class="p-5 flex flex-col flex-grow">
+            <h2 class="font-semibold text-lg mb-1 text-green-800">${product.name}</h2>
+            <p class="text-sm text-green-600 italic mb-2">${product.category}</p>
+            <p class="text-gray-700 text-sm mb-3 line-clamp-3">${product.description}</p>
+            <p class="font-bold text-xl text-green-700 mb-4">₹${product.price}</p>
+            <button onclick="addToCart(${index})" class="btn-gradient text-white py-2 rounded-full mt-auto shadow-lg hover:shadow-xl">
+              Add to Cart
+            </button>
+          </div>
+        `;
+        productList.appendChild(card);
+      });
+    }
+
+    document.getElementById("search").addEventListener("input", (e) => {
+      const val = e.target.value.toLowerCase();
+      const filtered = products.filter(p => p.name.toLowerCase().includes(val));
+      renderProducts(filtered);
+    });
+
+    document.getElementById("categoryFilter").addEventListener("change", (e) => {
+      const val = e.target.value;
+      const filtered = val ? products.filter(p => p.category === val) : products;
+      renderProducts(filtered);
+    });
+
+    document.getElementById("sortBy").addEventListener("change", (e) => {
+      const sorted = [...products];
+      if (e.target.value === "priceLowHigh") sorted.sort((a, b) => a.price - b.price);
+      if (e.target.value === "priceHighLow") sorted.sort((a, b) => b.price - a.price);
+      renderProducts(sorted);
+    });
+
+    // Live cart count
+    onSnapshot(collection(db, "cart"), (snapshot) => {
+      cartCount.textContent = snapshot.size;
+    });
+
+    loadProducts();
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    .btn-gradient {
+      background: linear-gradient(45deg, #22c55e, #16a34a);
+      transition: background 0.3s ease;
+    }
+    .btn-gradient:hover {
+      background: linear-gradient(45deg, #16a34a, #22c55e);
+    }
+    .card-hover:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 30px rgba(34, 197, 94, 0.3);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-green-100 to-green-50 font-poppins text-gray-900 min-h-screen flex flex-col">
+  <header class="bg-gradient-to-r from-green-700 to-green-800 text-white px-8 py-5 flex justify-between items-center shadow-lg sticky top-0 z-50">
+    <h1 class="text-3xl font-extrabold tracking-wide drop-shadow-lg select-none">Ayurveda Essentials</h1>
+    <div class="flex items-center gap-5 max-w-xl w-full">
+      <input id="search" type="text" placeholder="Search products..." class="flex-grow px-4 py-2 rounded-full focus:outline-none focus:ring-4 focus:ring-green-400 shadow-md text-gray-900" />
+      <div class="relative cursor-pointer">
+        <a href="cart.html">
+          <i class="fas fa-shopping-cart text-3xl drop-shadow-lg"></i>
+          <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-semibold px-2 rounded-full shadow-md">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <section class="bg-white mt-8 mx-8 rounded-xl p-5 shadow-lg flex flex-wrap justify-start gap-6 max-w-7xl">
+    <select id="categoryFilter" class="border border-green-400 rounded-full px-5 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+      <option value="">All Categories</option>
+      <option value="Hair">Hair</option>
+      <option value="Skin">Skin</option>
+      <option value="Immunity">Immunity</option>
+      <option value="Agriculture products">Agriculture Products</option>
+      <option value="Home Care">Home Care</option>
+      <option value="Oral Care">Oral care</option>
+      <option value="Beauty & Personal Care(makeup mantras)">Beauty & Personal Care(makeup mantras)</option>
+      <option value="Food Products">food Products</option>
+      <option value="Jeeveda Spices">Jeeveda Spices</option>
+      <option value="Baby Care">Baby Care</option>
+      <option value="Apparels">Apparels</option>
+      <option value="Wellness products">Wellness Products</option>
+    </select>
+    <select id="sortBy" class="border border-green-400 rounded-full px-5 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 transition">
+      <option value="default">Sort by</option>
+      <option value="priceLowHigh">Price: Low to High</option>
+      <option value="priceHighLow">Price: High to Low</option>
+    </select>
+  </section>
+
+  <main id="productList" class="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 p-8 max-w-7xl mx-auto"></main>
+</body>
+</html>  
